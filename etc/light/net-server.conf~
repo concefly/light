@@ -1,0 +1,11 @@
+[net]
+port = 80
+publish = /light/light-ctrl-web/publish
+template = /light/light-ctrl-web/template
+
+[database]
+host = localhost
+port = 3306
+user = root
+passwd = 2013
+name =light

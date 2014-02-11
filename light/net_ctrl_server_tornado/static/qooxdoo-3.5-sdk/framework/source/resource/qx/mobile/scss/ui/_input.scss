@@ -1,0 +1,55 @@
+//
+// INPUT FIELDS
+//
+
+.text-field:not(.selectbox), .password-field, .number-field, .text-area {
+  @include border-radius($input-border-radius);
+  @include background($input-background);
+
+  border: rem(1) solid $input-border-color;
+  color:  $input-text-color;
+}
+
+.mobile input.invalid {
+  border: rem(1) solid $input-invalid-border-color !important;
+}
+
+.mobile input, .text-area {
+  font-family: $application-font;
+}
+
+.mobile input, .mobile select {
+  vertical-align: middle;
+}
+
+.mobile input, .mobile select, .text-area {
+  font-size: rem(15);
+}
+
+.text-field:not(.selectbox), .number-field, .password-field {
+  @include background-clip(padding-box);
+  @include box-sizing(border-box);
+  text-indent: rem(4);
+  height: rem(26);
+}
+
+.text-field, .password-field, .number-field, .text-area {
+  @include appearance(textarea);
+  width: 100%;
+  outline: none;
+}
+
+.text-field.invalid, .checkbox.invalid, .radio.invalid, .password-field.invalid, .text-area.invalid {
+  border: rem(1) solid $input-invalid-border-color !important;
+}
+
+.text-area {
+  @include border-radius(none);
+  @include background-clip(padding-box);
+  @include background($input-background);
+  resize: none;
+  padding-top:rem(4);
+  text-indent:rem(4);
+  height: rem(3);
+  overflow:hidden;
+}

@@ -1,0 +1,95 @@
+# -*- coding:utf-8 -*-
+
+import tornado.web
+
+import json
+import datetime
+import db_access as db
+
+def joinResponse(state=200,message='ok',response=[],callback='callback'):
+	d = {}
+	d['state'] = state
+	d['message'] = message
+	d['response'] = response
+	return '%s( %s )' %(callback,d)
+
+def convertDatetime(obj):
+	return [int(i) for i in obj.strftime('%Y-%m-%d-%H-%M-%S').split('-')]
+
+class sys_info(tornado.web.RequestHandler):
+	def get(self):
+		func = self.get_argument('callback')
+		d = {}
+		d['cpu'] = 1
+		d['mem'] = [0,0]
+		d['disk'] = [0,0]
+		d['time'] = [0,0,0,0,0,0,0]
+		d = dict(state=200,message='ok',response=[d])
+		re = "%s(%s)" %(func,json.dumps(d))
+		self.write(re)
+	
+	def post(self):
+		self.get()
+
+class group_online(tornado.web.RequestHandler):
+	def get(self):
+		func = self.get_argument('callback')
+		req_zaddr = []
+		try:
+			req_zaddr = json.loads(self.get_argument('zaddr'))
+		except:
+			pass
+		res = []
+		if req_zaddr:
+			for z in req_zaddr:
+				pee = db.GroupOnline.selectBy(zaddr=z)[0]
+				res.append(dict(zaddr=pee.zaddr,ChipCode=pee.ChipCode,DevCount=pee.DevCount,time=convertDatetime(pee.time)))
+		else:
+			for pee in db.GroupOnline.selectBy():
+				res.append(dict(zaddr=pee.zaddr,ChipCode=pee.ChipCode,DevCount=pee.DevCount,time=convertDatetime(pee.time)))
+		self.write( joinResponse(response=res,callback=func) )
+	
+	def post(self):
+		self.get()
+
+class group_fix_info(tornado.web.RequestHandler):
+	def get(self):
+		func = self.get_argument('callback')
+		req_zaddr = []
+		try:
+			req_zaddr = json.loads(self.get_argument('zaddr'))
+		except:
+			pass
+		res = []
+		if req_zaddr:
+			for z in req_zaddr:
+				pee = db.GroupFixInfo.selectBy(zaddr=z)[0]
+				res.append(dict(zaddr=pee.zaddr,name=pee.name,describe=pee.describe))
+		else:
+			for pee in db.GroupFixInfo.selectBy():
+				res.append(dict(zaddr=pee.zaddr,name=pee.name,describe=pee.describe))
+		self.write( joinResponse(response=res,callback=func) )
+	
+	def post(self):
+		self.get()
+
+class group_var_info(tornado.web.RequestHandler):
+	def get(self):
+		func = self.get_argument('callback')
+		req_zaddr = []
+		try:
+			req_zaddr = json.loads(self.get_argument('zaddr'))
+		except:
+			pass
+		res = []
+		if req_zaddr:
+			for z in req_zaddr:
+				pee = db.GroupVarInfo.selectBy(zaddr=z)[0]
+				res.append(dict(zaddr=pee.zaddr,name=pee.name,describe=pee.describe))
+		else:
+			for pee in db.GroupVarInfo.selectBy():
+				res.append(dict(zaddr=pee.zaddr,name=pee.name,describe=pee.describe))
+		self.write( joinResponse(response=res,callback=func) )
+	
+	def post(self):
+		self.get()

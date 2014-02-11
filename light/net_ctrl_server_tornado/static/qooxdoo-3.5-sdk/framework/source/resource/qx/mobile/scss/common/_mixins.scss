@@ -1,0 +1,205 @@
+@import "../../../scss/mixins";
+
+@mixin tap-highlight-color($args) {
+  -webkit-tap-highlight-color: $args;
+  -moz-tap-highlight-color: $args;
+  tap-highlight-color: $args;
+}
+
+@mixin text-size-adjust($args) {
+  -webkit-text-size-adjust: $args;
+  -moz-text-size-adjust: $args;
+  text-size-adjust: $args;
+}
+
+@mixin transform($args) {
+  -webkit-transform: $args;
+  -moz-transform: $args;
+  transform: $args;
+}
+
+@mixin perspective($args) {
+  -webkit-perspective: $args;
+  -moz-perspective: $args;
+  perspective: $args;
+}
+
+@mixin transform-style($args) {
+  -webkit-transform-style: $args;
+  -moz-transform-style: $args;
+  transform-style: $args;
+}
+
+@mixin transition($args) {
+  -webkit-transition: $args;
+  -moz-transition: $args;
+  transition: $args;
+}
+
+@mixin transition-duration($args) {
+  -webkit-transition-duration: $args;
+  -moz-transition-duration: $args;
+  transition-duration: $args;
+}
+
+@mixin backface-visibility($args) {
+  -webkit-backface-visibility: $args;
+  -moz-backface-visibility: $args;
+  backface-visibility: $args;
+}
+
+@mixin animation-timing-function($args) {
+  -webkit-animation-timing-function: $args;
+  -moz-animation-timing-function: $args;
+  animation-timing-function: $args;
+}
+
+@mixin animation-duration($args) {
+  -webkit-animation-duration: $args;
+  -moz-animation-duration: $args;
+  animation-duration: $args;
+}
+
+@mixin animation-fill-mode($args) {
+  -webkit-animation-fill-mode: $args;
+  -moz-animation-fill-mode: $args;
+  animation-fill-mode: $args;
+}
+
+@mixin animation-name($args) {
+  -webkit-animation-name: $args;
+  -moz-animation-name: $args;
+  animation-name: $args;
+}
+
+@mixin animation-iteration-count($args) {
+  -webkit-animation-iteration-count: $args;
+  -moz-animation-iteration-count: $args;
+  animation-iteration-count: $args;
+}
+
+@mixin transform-origin($args) {
+  -webkit-transform-origin: $args;
+  -moz-transform-origin: $args;
+  transform-origin: $args;
+}
+
+@mixin box-orient($args) {
+  -webkit-box-orient: $args;
+  -moz-box-orient: $args;
+  box-orient: $args;
+}
+
+@mixin box-align($args) {
+  -webkit-box-align: $args;
+  -moz-box-align: $args;
+  -ms-flex-align: $args;
+  box-align: $args;
+}
+
+@mixin box-flex($args) {
+  -webkit-box-flex: $args;
+  -moz-box-flex: $args;
+  -ms-flex: $args $args auto;
+  box-flex: $args;
+}
+
+@mixin box-direction($args) {
+  -webkit-box-direction: $args;
+  -moz-box-direction: $args;
+  box-direction: $args;
+}
+
+@mixin box-pack($args) {
+  -webkit-box-pack: $args;
+  -moz-box-pack: $args;
+  -ms-flex-pack: $args;
+  box-pack: $args;
+}
+
+@mixin box-flex-group($args) {
+  -webkit-box-flex-group: $args;
+  -moz-box-flex-group: $args;
+  box-flex-group: $args;
+}
+
+@mixin box-ordinal-group($args) {
+  -moz-box-ordinal-group:$args;
+  -webkit-box-ordinal-group:$args;
+  box-ordinal-group:$args;
+}
+
+// FLEXBOX LAYOUT: SYNTAX 08 2012
+
+@mixin flexbox-direction($args) {
+  -ms-flex-direction: $args;
+}
+
+@mixin border-image($args) {
+  -webkit-border-image: $args;
+  -moz-border-image: $args;
+  // Implementation seems to differ
+  // border-image: $args;
+}
+
+@mixin box-inset-shadow($args) {
+  -moz-box-shadow: inset $args;
+  -webkit-box-shadow: inset $args;
+  box-shadow: inset $args;
+}
+
+@mixin box-inset-multi-shadow($arg1, $arg2) {
+  -moz-box-shadow: inset $arg1, inset $arg2;
+  -webkit-box-shadow: inset $arg1, inset $arg2;
+  box-shadow: inset $arg1, inset $arg2;
+}
+
+@mixin box-inset-four-multi-shadow($arg1, $arg2,$arg3, $arg4) {
+  -moz-box-shadow: inset $arg1, inset $arg2, inset $arg3, inset $arg4;
+  -webkit-box-shadow: inset $arg1, inset $arg2, inset $arg3, inset $arg4;
+  box-shadow: inset $arg1, inset $arg2, inset $arg3, inset $arg4;
+}
+
+@mixin appearance($args) {
+  -webkit-appearance: $args;
+  -moz-appearance: $args;
+  appearance: $args;
+}
+
+@mixin triangle-up($size,$color) {
+  display:block;
+  width: 0;
+  height: 0;
+
+  border-left: $size solid transparent;
+  border-right: $size solid transparent;
+  border-bottom: $size solid $color;
+}
+
+@mixin triangle-down($size,$color) {
+  display:block;
+  width: 0;
+  height: 0;
+
+  border-left: $size solid transparent;
+  border-right: $size solid transparent;
+  border-top: $size solid $color;
+}
+
+@mixin triangle-left($size,$color) {
+  display:block;
+  width: 0;
+  height: 0;
+  border-top: $size solid transparent;
+  border-bottom: $size solid transparent;
+  border-right: $size solid $color;
+}
+
+@mixin triangle-right($size,$color) {
+  display:block;
+  width: 0;
+  height: 0;
+  border-top: $size solid transparent;
+  border-bottom: $size solid transparent;
+  border-left: $size solid $color;
+}

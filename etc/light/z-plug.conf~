@@ -1,0 +1,3 @@
+[plug]
+path = /light/zigbee-server/plug
+except = 
