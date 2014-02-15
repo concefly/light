@@ -1,58 +1,69 @@
 
 qx.Class.define('monitor.DevFixInfo',
 {
-	extend: qx.core.Object,
+	extend: qx.ui.groupbox.GroupBox,
 	
 	properties:
 	{
-		zaddr: {nullable:true, event:'changeZaddr'},
-		id: {nullable:true, event:'changeId'},
-		model: {init:qx.data.marshal.Json.createModel([{item:'null', content:'null'}]), event:'changeModel'}
-	},
-	
-	statics:
-	{
-		path: '/api/dev_fix_info'
+		zaddr: {nullable:true, check:'Integer', event:'changeZaddr'},
+		id: {nullable:true, check:'Integer', event:'changeId'}
 	},
 	
 	members:
 	{
-		__store: null,
-		__zaddr: null,
-		__id: null,
+		__coreData: null,
+		__nameLabel: null,
+		__describeLabel: null,
 		
-		update: function(zaddr,id)
+		_build: function(e)
 		{
-			if(this.__store==null)
-			{
-				this.__store = new qx.io.request.Xhr(this.self(arguments).path,'POST');
-				this.__store.addListener('success',this._convert,this);
-			}
-			this.__store.setRequestData({zaddr:zaddr, id:id});
-			this.__store.send();
-			this.__zaddr = zaddr;
-			this.__id = id;
-		},
-		
-		clear: function()
-		{
-			this.setModel(qx.data.marshal.Json.createModel([{item:'null', content:'null'}]));
-		},
-		
-		_convert: function(e)
-		{
-			var rawRes = e.getTarget().getResponse();
-			var res = eval('('+rawRes+')');
+			var fixInfo = this.__coreData.getDevFixInfo();
+			var zaddr = this.getZaddr();
+			var id = this.getId();
 			
-			this.setZaddr(this.__zaddr);
-			this.setId(this.__id);
-			this.setModel(qx.data.marshal.Json.createModel(res));
+			this.__nameLabel.setValue('');
+			this.__describeLabel.setValue('');
+			
+			for(var i in fixInfo)
+			{
+				if(fixInfo[i].zaddr==zaddr && fixInfo[i].id==id)
+				{
+					this.__nameLabel.setValue(fixInfo[i].name);
+					this.__describeLabel.setValue(fixInfo[i].describe);
+					break;
+				}
+			}
 		}
 	},
 	
-	construct: function()
+	construct: function(title,coreData)
 	{
-		this.base(arguments);
+		this.base(arguments,title);
+		
+		//~ 设置数据源
+		this.__coreData = coreData;
+		
+		//~ 连接信号
+		this.__coreData.addListener('changeDevOnline',this._build,this);
+		this.__coreData.addListener('changeDevFixInfo',this._build,this);
+		
+		this.addListener('changeZaddr',this._build,this);
+		this.addListener('changeId',this._build,this);
+		
+		//~ 设置布局
+		this.setLayout(new qx.ui.layout.Grid(2,2));
+		
+		//~ 初始化组件
+		this.__nameLabel = new qx.ui.basic.Label('null').set({rich:true});
+		this.__describeLabel = new qx.ui.basic.Label('null').set({rich:true});
+		
+		//~ 添加组件
+		this.add(new qx.ui.basic.Label('<b>Name:</b>').set({rich:true}),{row: 0, column: 0});
+		this.add(this.__nameLabel,{row: 0, column: 1});
+		
+		this.add(new qx.ui.basic.Label('<b>Describe:</b>').set({rich:true}),{row: 1, column: 0});
+		this.add(this.__describeLabel,{row: 1, column: 1});
 	}
+	
 });
 

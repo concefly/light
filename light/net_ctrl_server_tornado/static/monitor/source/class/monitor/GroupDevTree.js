@@ -1,48 +1,82 @@
 
-qx.Class.define("monitor.GroupDevTree",
+qx.Class.define('monitor.GroupDevTree',
 {
 	extend: qx.ui.tree.Tree,
 	
-	statics:
-	{
-		path: '/api/group_dev_tree'
-	},
-	
 	properties:
 	{
-		model: {nullable:true, event:'changeModel'}
+		zaddr: {nullable:true, check:'Integer', event:'changeZaddr'},
+		id: {nullable:true, check:'Integer', event:'changeId'}
 	},
 	
 	members:
 	{
-		__json: null,
-		__ctrl: null,
+		__coreData: null,
 		
-		update: function()
+		setCoreData: function(obj)
 		{
-			if(this.__json==null)
-			{
-				this.__json = new qx.data.store.Json();
-				this.__json.bind('model',this.__ctrl,'model');
-				this.__json.addListener('loaded',this._onLoaded,this);
-				this.__json.setUrl(this.self(arguments).path);
-			}
-			else
-				this.__json.reload();
+			this.__coreData = obj;
+			
+			this.__coreData.addListener('changeGroupOnline',this._build,this);
+			this.__coreData.addListener('changeDevOnline',this._build,this);
 		},
 		
-		_onLoaded: function(e)
+		_build: function(e)
 		{
-			var res = e.getData();
+			var groups = this.__coreData.getGroupOnline();
+			var devs = this.__coreData.getDevOnline();
+			//~ 构建树
+			var root = new qx.ui.tree.TreeFolder('Groups');
+			root.setOpen(true);
 			
-			this.setModel( res );
-			this.getRoot().setOpen(true);
+			for(var i in groups)
+			{
+				var groupLabel = '';
+				groupLabel += groups[i].ChipCode+'@'+groups[i].zaddr+' '+groups[i].DevCount+'s '+ groups[i].time;
+				
+				var thisGroup = new qx.ui.tree.TreeFolder(groupLabel);
+				thisGroup.setModel({type:'group', zaddr:groups[i].zaddr});
+				
+				for(var j in devs)
+				{
+					if(devs[j].zaddr==groups[i].zaddr)
+					{
+						var devLabel = '';
+						devLabel += devs[j].id+' of '+devs[j].MajorNum+','+devs[j].SubNum;
+						
+						var thisDev = new qx.ui.tree.TreeFile(devLabel);
+						thisDev.setModel({type:'device', zaddr:groups[i].zaddr, id:devs[j].id});
+						
+						thisGroup.add(thisDev);
+					}
+				}
+				
+				root.add(thisGroup);
+			}
+			
+			this.setRoot(root);
 		}
 	},
 	
-	construct: function()
+	construct: function(coreData)
 	{
-		this.base(arguments);
-		this.__ctrl = new qx.data.controller.Tree(null,this,'kids','label');
+		this.base(arguments,coreData);
+		
+		this.__coreData = coreData;
+		this.__coreData.addListener('changeGroupOnline',this._build,this);
+		this.__coreData.addListener('changeDevOnline',this._build,this);
+		
+		this.addListener('changeSelection',function(e)
+		{
+			var item = e.getData()[0];
+			var type = item.getModel().type;
+			var zaddr = item.getModel().zaddr;
+			
+			this.setZaddr(zaddr);
+			if(type=='group')
+				this.setId(null);
+			else
+				this.setId(item.getModel().id);
+		},this);
 	}
 });

@@ -1,63 +1,79 @@
 
 qx.Class.define('monitor.GroupVarInfo',
 {
-	extend: qx.core.Object,
+	extend: qx.ui.groupbox.GroupBox,
 	
 	properties:
 	{
-		zaddr: {nullable:true, event:'changeZaddr'},
-		model: {init:qx.data.marshal.Json.createModel([{item:'null', content:'null'}]), event:'changeModel'}
-	},
-	
-	statics:
-	{
-		path: '/api/group_var_info'
+		zaddr: {nullable:true, check:'Integer', event:'changeZaddr'}
 	},
 	
 	members:
 	{
-		__store: null,
-		__zaddr: null,
+		__core: null,
 		
-		update: function(zaddr)
-		{
-			this.__store.setRequestData({zaddr:zaddr});
-			this.__store.send();
-			this.__zaddr = zaddr;
-		},
+		__form: null,
+		__nameText: null,
+		__descText: null,
+		__commitBtn: null,
 		
-		_convert: function(e)
+		_build: function(e)
 		{
-			var rawRes = e.getTarget().getResponse();
-			var res = eval('('+rawRes+')');
+			var varInfo = this.__core.getGroupVarInfo();
+			var zaddr = this.getZaddr();
 			
-			this.setZaddr(this.__zaddr);
-			this.setModel(qx.data.marshal.Json.createModel(res));
-		},
-		
-		remoteUpdate: function()
-		{
-			var req = {};
-			req['zaddr'] = this.getZaddr();
-			this.getModel().forEach(function(item)
+			this.__nameText.setValue('');
+			this.__descText.setValue('');
+			
+			for(var i in varInfo)
 			{
-				req[ item.getItem() ] = item.getContent();
-			},this);
-			this.__store.setRequestData(req);
-			this.__store.send();
+				if(varInfo[i].zaddr == zaddr)
+				{
+					this.__nameText.setValue(varInfo[i].name);
+					this.__descText.setValue(varInfo[i].describe);
+					break;
+				}
+			}
 		},
 		
-		clear: function()
+		_commit: function()
 		{
-			this.setModel(qx.data.marshal.Json.createModel([{item:'null', content:'null'}]));
+			var name = this.__nameText.getValue();
+			var desc = this.__descText.getValue();
+			var zaddr = this.getZaddr();
+			
+			this.__core.remoteUpdate('GroupVarInfo',zaddr,{name:name, describe:desc});
 		}
 	},
 	
-	construct: function()
+	construct: function(title,core)
 	{
-		this.base(arguments);
-		this.__store = new qx.io.request.Xhr(this.self(arguments).path,'POST');
-		this.__store.addListener('success',this._convert,this);
+		this.base(arguments,title);
+		
+		this.__core = core;
+		
+		//~ 连接信号
+		this.__core.addListener('changeGroupOnline',this._build,this);
+		this.__core.addListener('changeGroupVarInfo',this._build,this);
+		
+		this.addListener('changeZaddr',this._build,this);
+		
+		//~ 设置布局
+		this.setLayout(new qx.ui.layout.Canvas());
+		
+		//~ 初始化组件
+		this.__form = new qx.ui.form.Form();
+		this.__nameText = new qx.ui.form.TextField();
+		this.__descText = new qx.ui.form.TextArea();
+		this.__commitBtn = new qx.ui.form.Button('提交');
+		this.__commitBtn.addListener('execute',this._commit,this);
+		
+		//~ 初始化表单
+		this.__form.add(this.__nameText,'Name');
+		this.__form.add(this.__descText,'Describe');
+		this.__form.addButton(this.__commitBtn);
+		
+		//~ 生成表单
+		this.add(new qx.ui.form.renderer.Single(this.__form));
 	}
 });
-

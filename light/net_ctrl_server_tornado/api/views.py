@@ -4,198 +4,225 @@ import tornado.web
 
 import json
 import datetime
+import pony.orm as orm
 import db_access as db
 
-def jsonResponse(state=200,message='ok',response=[]):
-	d = {}
-	d['state'] = state
-	d['message'] = message
-	d['response'] = response
-	return json.dumps(response)
+import time
 
 def convertDatetime(obj):
-	return [int(i) for i in obj.strftime('%Y-%m-%d-%H-%M-%S').split('-')]
+	return obj.strftime('%Y-%m-%d T %H:%M:%S')
 
-class sys_info(tornado.web.RequestHandler):
+class group_online(tornado.web.RequestHandler):
+	#~ 无请求值：返回所有记录
 	def get(self):
-		func = self.get_argument('callback')
-		d = {}
-		d['cpu'] = 1
-		d['mem'] = [0,0]
-		d['disk'] = [0,0]
-		d['time'] = [0,0,0,0,0,0,0]
-		d = dict(state=200,message='ok',response=[d])
-		re = "%s(%s)" %(func,json.dumps(d))
-		self.write(re)
+		res = []
+		with orm.db_session:
+			groups = db.GroupOnline.select();
+			for group in groups:
+				d = {}
+				d['zaddr'] = group.zaddr
+				d['ChipCode'] = group.ChipCode
+				d['DevCount'] = group.DevCount
+				d['time'] = convertDatetime(group.time)
+				res.append(d)
+		self.write(json.dumps(res))
 	
 	def post(self):
 		self.get()
 
-class group_dev_tree(tornado.web.RequestHandler):
-	def get(self):
-		res = dict(label='group', type='root', kids=[])
-		for group in  db.GroupOnline.select():
-			g = {}
-			g['zaddr'] = group.zaddr
-			g['type'] = 'group'
-			g['ChipCode'] = group.ChipCode
-			g['DevCount'] = group.DevCount
-			g['time'] = convertDatetime(group.time)
-			g['label'] = '%s %s devs @%s %s' %(g['ChipCode'],g['zaddr'],g['DevCount'],group.time.strftime('%Y-%m-%d %H:%M:%S'))
-			g['kids'] = []
-			for dev in db.DevOnline.selectBy(zaddr=g['zaddr']):
-				d = {}
-				d['type'] = 'device'
-				d['zaddr'] = g['zaddr']
-				d['id'] = dev.did
-				d['MajorNum'] = dev.MajorNum
-				d['SubNum'] = dev.SubNum
-				d['label'] = '%s (%s,%s)' %(d['id'],d['MajorNum'],d['SubNum'])
-				g['kids'].append(d)
-			if not g['kids']:
-				del g['kids']
-			res['kids'].append( g )
-		self.write(jsonResponse(response=res))
-
 class group_fix_info(tornado.web.RequestHandler):
+	#~ 无请求值：返回所有记录
 	def get(self):
-		req_zaddr = int( self.get_argument('zaddr') )
 		res = []
-		groups = db.GroupFixInfo.selectBy(zaddr=req_zaddr)
-		if len(list(groups))==0:
-			group = db.GroupFixInfo(zaddr=req_zaddr, name='No name', describe='No describe')
-		else:
-			group = groups[0]
-		res.append(dict(item='name',content=group.name))
-		res.append(dict(item='describe',content=group.describe))
-		self.write( jsonResponse(response=res) )
+		with orm.db_session:
+			groups = db.GroupFixInfo.select()
+			for group in groups:
+				d = {}
+				d['zaddr'] = group.zaddr
+				d['name'] = group.name
+				d['describe'] = group.describe
+				res.append(d)
+		self.write(json.dumps(res))
 	
 	def post(self):
 		self.get()
 
 class group_var_info(tornado.web.RequestHandler):
+	#~ 无请求值：返回所有记录
+	#~ zaddr, ... 请求：修改并返回所有记录
 	def get(self):
 		req = self.request.arguments.copy()
-		zaddr = int(req['zaddr'][0])
-		groups = db.GroupVarInfo.selectBy(zaddr=zaddr)
-		#~ 若不存在此条目，新增它
-		if len(list(groups))==0:
-			group = db.GroupVarInfo(zaddr=zaddr,name = 'No name',describe = 'No describe')
-		else:
-			group = groups[0]
+		with orm.db_session:
+			if req.has_key('zaddr'):
+				#~ zaddr, ... 请求
+				req_zaddr = int(req.pop('zaddr')[0])
+				group = db.GroupVarInfo.get(zaddr=req_zaddr);
+				if group==None:
+					InitValue = {}
+					InitValue['zaddr'] = req_zaddr
+					for k in req:
+						if k=='name':
+							InitValue['name'] = req['name'][0]
+						elif k=='describe':
+							InitValue['describe'] = req['describe'][0]
+					group = db.GroupVarInfo(**InitValue)
+				else:
+					group.name = name=req['name'][0]
+					group.describe = name=req['describe'][0]
+				db.commit()
+			#~ 返回所有记录
+		with orm.db_session:
+			groups = db.GroupVarInfo.select()
+			res = []
+			for group in groups:
+				d = {}
+				d['zaddr'] = group.zaddr
+				d['name'] = group.name
+				d['describe'] = group.describe
+				res.append(d)
+		self.write(json.dumps(res))
+	
+	def post(self):
+		self.get()
+
+class dev_online(tornado.web.RequestHandler):
+	#~ 无请求值：返回所有记录
+	def get(self):
 		res = []
-		if len(req) >= 2:
-			#~ 修改属性
-			req.pop('zaddr')
-			for key in req:
-				if(key=='name'):
-					group.name = req['name'][0]
-				elif(key=='describe'):
-					group.describe = req['describe'][0]
-		#~ 获取属性
-		res.append(dict(item='name',content=group.name))
-		res.append(dict(item='describe',content=group.describe))
-		self.write( jsonResponse(response=res) )
+		with orm.db_session:
+			devs = db.DevOnline.select();
+			for dev in devs:
+				d = {}
+				d['zaddr'] = dev.zaddr
+				d['id'] = dev.did
+				d['MajorNum'] = dev.MajorNum
+				d['SubNum'] = dev.SubNum
+				res.append(d)
+		self.write(json.dumps(res))
 	
 	def post(self):
 		self.get()
 
 class dev_fix_info(tornado.web.RequestHandler):
+	#~ 无请求值：返回所有记录
 	def get(self):
-		req_zaddr = int( self.get_argument('zaddr') )
-		req_id = int( self.get_argument('id') )
 		res = []
-		devs = db.DevFixInfo.selectBy(zaddr=req_zaddr, did=req_id)
-		if len(list(devs))==0:
-			dev = db.DevFixInfo(zaddr=req_zaddr, did=req_id, name='No name', describe='No describe')
-		else:
-			dev = devs[0]
-		res.append(dict(item='name',content=dev.name))
-		res.append(dict(item='describe',content=dev.describe))
-		self.write( jsonResponse(response=res) )
+		with orm.db_session:
+			devs = db.DevFixInfo.select()
+			for dev in devs:
+				d = {}
+				d['zaddr'] = dev.zaddr
+				d['id'] = dev.did
+				d['name'] = dev.name
+				d['describe'] = dev.describe
+				res.append(d)
+		self.write(json.dumps(res))
 	
 	def post(self):
 		self.get()
 
 class dev_var_info(tornado.web.RequestHandler):
+	#~ 无请求值：返回所有记录
+	#~ zaddr,id ... 请求：修改并返回所有记录
 	def get(self):
 		req = self.request.arguments.copy()
-		req_zaddr = int(req['zaddr'][0])
-		req_id = int(req['id'][0])
-		devs = db.DevVarInfo.selectBy(zaddr=req_zaddr, did=req_id)
-		#~ 若不存在此条目，新增它
-		if len(list(devs))==0:
-			dev = db.DevVarInfo(zaddr=req_zaddr, did=req_id, name = 'No name',describe = 'No describe')
-		else:
-			dev = devs[0]
-		res = []
-		if len(req) >= 2:
-			#~ 修改属性
-			req.pop('zaddr')
-			for key in req:
-				if(key=='name'):
+		with orm.db_session:
+			if req.has_key('zaddr') and req.has_key('id'):
+				#~ zaddr,id ... 请求
+				req_zaddr = int(req.pop('zaddr')[0])
+				req_id = int(req.pop('id')[0])
+				dev = db.DevVarInfo.get(zaddr=req_zaddr,did=req_id);
+				if dev==None:
+					InitValue = {}
+					InitValue['zaddr'] = req_zaddr
+					InitValue['did'] = req_id
+					for k in req:
+						if k=='name':
+							InitValue['name'] = req['name'][0]
+						elif k=='describe':
+							InitValue['describe'] = req['describe'][0]
+					dev = db.DevVarInfo(**InitValue)
+				else:
 					dev.name = req['name'][0]
-				elif(key=='describe'):
 					dev.describe = req['describe'][0]
-		#~ 获取属性
-		res.append(dict(item='name',content=dev.name))
-		res.append(dict(item='describe',content=dev.describe))
-		self.write( jsonResponse(response=res) )
+				db.commit()
+		with orm.db_session:
+			#~ 返回所有记录
+			devs = db.DevVarInfo.select()
+			res = []
+			for dev in devs:
+				d = {}
+				d['zaddr'] = dev.zaddr
+				d['id'] = dev.did
+				d['name'] = dev.name
+				d['describe'] = dev.describe
+				res.append(d)
+		self.write(json.dumps(res))
 	
 	def post(self):
 		self.get()
 
 class dev_dyn00(tornado.web.RequestHandler):
+	#~ limit 请求：返回limit记录
+	#~ zaddr, id, datDict{light:Integer}, limit 请求：添加记录，返回limit记录
 	def get(self):
 		req = self.request.arguments.copy()
-		req_zaddr = int(req['zaddr'][0])
-		req_id = int(req['id'][0])
-		req_limit = int(req['limit'][0])
-		devs = db.DevDyn00.selectBy(zaddr=req_zaddr, did=req_id)
-		res = []
-		devs_len = len(list(devs))
-		if devs_len > req_limit:
-			devs = devs[:req_limit]
-		for dev in devs:
-			res.append(dict(time=convertDatetime(dev.time), light=dev.light))
-		self.write( jsonResponse(response=res) )
+		req_limit = int(req.pop('limit')[0])
+		#~ 
+		with orm.db_session:
+			if req.has_key('zaddr') and req.has_key('id'):
+				#~ 添加记录
+				InitValue = {}
+				InitValue['zaddr'] = int(req.pop('zaddr')[0])
+				InitValue['did'] = int(req.pop('id')[0])
+				for k in req:
+					if k=='light':
+						InitValue[k] = int(req[k][0])
+				db.DevDyn00(**InitValue)
+				db.commit()
+		with orm.db_session:
+			res = []
+			devs = db.DevDyn00.select().order_by(db.desc(db.DevDyn00.time))[:req_limit]
+			for dev in devs:
+				d = {}
+				d['zaddr'] = dev.zaddr
+				d['id'] = dev.did
+				d['time'] = convertDatetime(dev.time)
+				d['light'] = dev.light
+				res.append(d)
+		self.write(json.dumps(res))
 	
 	def post(self):
 		self.get()
 
-class dev_dyn(tornado.web.RequestHandler):
+class dev_dyn01(tornado.web.RequestHandler):
+	#~ limit 请求：返回limit记录
 	def get(self):
 		req = self.request.arguments.copy()
-		req_zaddr = int(req['zaddr'][0])
-		req_id = int(req['id'][0])
-		req_limit = int(req['limit'][0])
-		devs = db.DevOnline.selectBy(zaddr=req_zaddr, did=req_id)
-		res = []
-		if len(list(devs)) > 0:
-			dev = devs[0]
-			mn = dev.MajorNum
-			sn = dev.SubNum
-			if mn==0 and sn==0:
-				#~ 设备号 00
-				dev00s = db.DevDyn00.selectBy(zaddr=req_zaddr, did=req_id)
-				dev00s = dev00s[:req_limit] if len(list(dev00s)) > req_limit else dev00s
-				for dev00 in dev00s:
-					d = {}
-					d['time'] = convertDatetime(dev00.time)
-					d['light'] = dev00.light
-					d['label'] = 'time:%s,    light:%s' %(dev00.time.strftime('%Y-%m-%d %H:%M:%S'),d['light'])
-					res.append(d)
-			elif mn==0 and sn==1:
-				#~ 设备号 01
-				dev01s = db.DevDyn01.selectBy(zaddr=req_zaddr, did=req_id)
-				dev01s = dev01s[:req_limit] if len(list(dev01s)) > req_limit else dev01s
-				for dev01 in dev01s:
-					d = {}
-					d['time'] = convertDatetime(dev01.time)
-					d['light'] = dev01.light
-					d['label'] = 'time:%s,    light:%s' %(dev01.time.strftime('%Y-%m-%d %H:%M:%S'),d['light'])
-					res.append(d)
-		self.write( jsonResponse(response=res) )
+		req_limit = int(req.pop('limit')[0])
+		#~ 
+		with orm.db_session:
+			if req.has_key('zaddr') and req.has_key('id'):
+				#~ 添加记录
+				InitValue = {}
+				InitValue['zaddr'] = int(req.pop('zaddr')[0])
+				InitValue['did'] = int(req.pop('id')[0])
+				for k in req:
+					if k=='light':
+						InitValue[k] = int(req[k][0])
+				db.DevDyn01(**InitValue)
+				db.commit()
+		with orm.db_session:
+			res = []
+			devs = db.DevDyn01.select().order_by(db.desc(db.DevDyn01.time))[:req_limit]
+			for dev in devs:
+				d = {}
+				d['zaddr'] = dev.zaddr
+				d['id'] = dev.did
+				d['time'] = convertDatetime(dev.time)
+				d['light'] = dev.light
+				res.append(d)
+		self.write(json.dumps(res))
 	
 	def post(self):
 		self.get()
