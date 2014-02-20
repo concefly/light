@@ -32,40 +32,22 @@ class dynamic(tornado.web.RequestHandler):
 	*	changeDevDyn00
 	*	changeDevDyn01
 	'''
-	#~ 实例化时，实例复制类的 DescQueue
-	DescQueue = []
-	
-	def initialize(self):
-		self.DescQueue = [] + dynamic.DescQueue
-		dynamic.DescQueue = []
-	
 	@tornado.web.asynchronous
 	def get(self):
-		if self.DescQueue:
-			res = self.construct_res(*self.DescQueue)
-			self.write(json.dumps(res))
-			self.finish()
-		else:
-			zbridge.bridge.add_listener( 'o',self.on_message )
-			zbridge.bridge.add_listener( 'r',self.on_message )
-			zbridge.bridge.add_listener( 'q',self.on_message )
-			zbridge.bridge.add_listener( 'l',self.on_message )
+		zbridge.bridge.add_listener( 'o',self.on_message )
+		zbridge.bridge.add_listener( 'r',self.on_message )
+		zbridge.bridge.add_listener( 'q',self.on_message )
+		zbridge.bridge.add_listener( 'l',self.on_message )
 	
 	def post(self):
 		self.get()
 	
-	def construct_res(self,*descs):
-		re = []
-		for desc in descs:
-			event = desc['e']
-			d = {}
-			if event in ('o','l'): d['msg'] = 'changeGroupOnline'
-			elif event in ('r','q'): d['msg'] = 'changeDevOnline'
-			re.append(d)
-		return re
-	
 	def on_message(self,desc):
-		self.write(json.dumps( self.construct_res(desc) ))
+		event = desc['e']
+		d = {}
+		if event in ('o','l'): d['msg'] = 'changeGroupOnline'
+		elif event in ('r','q'): d['msg'] = 'changeDevOnline'
+		self.write(json.dumps([d]))
 		self.finish()
 	
 	def on_finish(self):
@@ -325,12 +307,3 @@ class dev_dyn01(tornado.web.RequestHandler):
 	
 	def post(self):
 		self.get()
-
-#~ dynamic 的信号队列
-def load_sig2dynamic(desc):
-	dynamic.DescQueue.append(desc)
-
-zbridge.bridge.add_listener( 'o',load_sig2dynamic )
-zbridge.bridge.add_listener( 'r',load_sig2dynamic )
-zbridge.bridge.add_listener( 'q',load_sig2dynamic )
-zbridge.bridge.add_listener( 'l',load_sig2dynamic )
